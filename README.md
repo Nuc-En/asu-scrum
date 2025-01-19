@@ -8,15 +8,13 @@
 Модель можно скачать по [ссылке](https://mega.nz/file/AconRT7Z#mFy8KBTJrq_cX5JKUUciqvMqPLy8YWEp8J6bmrMHBPc). github имеет ограничение на размер файла 100мб, поэтому так.
 
 ## Структура сайта
-
-
-├── app.py
-├── Dockerfile
-├── docker-compose.yml
-├── model.h5
-├── /templates
-│   └── index.html
-└── /uploads
+- app.py
+- Dockerfile
+- docker-compose.yml
+- model.h5
+- /templates
+- - index.html
+- /uploads
 
 ## Используемые технологии
 flask для сервера, tensorflow - для распознавания.
@@ -25,6 +23,8 @@ flask для сервера, tensorflow - для распознавания.
 Установить [docker](https://docs.docker.com/compose/install/)
 
 ## Запуск
+- скачать [модель](https://mega.nz/file/AconRT7Z#mFy8KBTJrq_cX5JKUUciqvMqPLy8YWEp8J6bmrMHBPc) в папку проекта
+- запустить docker
 ```bash
 docker compose up -d
 ```
