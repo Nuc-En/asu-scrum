@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Upload and Recognition</title>
+    <script>
+        function uploadImage() {
+            const fileInput = document.getElementById("file");
+            if (!fileInput.files[0]) {
+                alert("Please select an image.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            fetch("/", {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const taskId = data.task_id;
+                document.getElementById("status").innerText = "Image is being processed...";
+                checkStatus(taskId);
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function checkStatus(taskId) {
+            setInterval(() => {
+                fetch(`/status/${taskId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.completed) {
+                            document.getElementById("status").innerText = 
+                                `Class: ${data.class}, Probability: ${data.probability.toFixed(2)}`;
+                            clearInterval();
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+            }, 5000);
+        }
+    </script>
+</head>
+<body>
+    <h1>Upload an Image</h1>
+    <form id="uploadForm" onsubmit="event.preventDefault(); uploadImage();">
+        <input type="file" id="file" accept="image/*">
+        <button type="submit">Upload</button>
+    </form>
+    <p id="status"></p>
+</body>
+</html>
