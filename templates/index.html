@@ -35,7 +35,7 @@
                     .then(data => {
                         if (data.completed) {
                             document.getElementById("status").innerText = 
-                                `Class: ${data.class}, Probability: ${data.probability.toFixed(2)}`;
+                                `Class: ${data.predictions[0].description}, Probability: ${data.predictions[0].probability.toFixed(2)}`;
                             clearInterval();
                         }
                     })

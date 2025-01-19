@@ -1,10 +1,16 @@
 from flask import Flask, render_template, request, jsonify
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array, load_img
+from tensorflow.keras.applications import VGG16
+from tensorflow.keras.applications.vgg16 import preprocess_input, decode_predictions
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 import os
 import threading
 import time
 import numpy as np
+import json
+
+model = VGG16(weights="imagenet")
 
 app = Flask(__name__)
 
@@ -14,41 +20,61 @@ MODEL_PATH = "model.h5"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 IMG_SIZE = 360
-MODEL_PATH = 'model.h5'
-# Загружаем модель
-model = load_model(MODEL_PATH)
 
-# Глобальный объект для отслеживания статуса распознавания
 status = {}
 
-# Предсказываем класс изображения
-def predict_image(image_path, task_id):
-    img = load_img(image_path, target_size=(IMG_SIZE, IMG_SIZE))  # Убедитесь, что размер соответствует обученной модели
-    img_array = img_to_array(img) / 255.0
+def prepare_image(image_path):
+    print(11)
+    img = load_img(image_path, target_size=(224, 224))
+    img_array = img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
+    img_array = preprocess_input(img_array)
+    print(12)
+    return img_array
 
-    predictions = model.predict(img_array)
-    predicted_class = np.argmax(predictions[0])
-    probability = predictions[0][predicted_class]
+def predict_image(image_path, task_id):
+    print(8)
+    prepared_image = prepare_image(image_path)
+    print(9)
+    print(f"Expected input shape: {model.input_shape}")
+    print(f"Provided input shape: {prepared_image.shape}")
+    
+    predictions = model.predict(prepared_image)
+    print(10)
 
-    # Обновляем статус задачи
-    status[task_id] = {"completed": True, "class": int(predicted_class), "probability": float(probability)}
+    decoded_predictions = decode_predictions(predictions, top=3)
+    print(11, decoded_predictions)
+
+    status[task_id] = {
+        "completed": True,
+        "predictions": [
+            {"label": label, "description": description, "probability": float(prob)}
+            for label, description, prob in decoded_predictions[0]
+        ]
+    }
+    print(status)
+
+    return decoded_predictions
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        # Сохраняем загруженное изображение
         if "file" not in request.files:
             return "No file part", 400
+        print(1)
         file = request.files["file"]
+        print(2)
         if file.filename == "":
             return "No selected file", 400
-        task_id = str(len(status) + 1)  # Генерируем уникальный ID для задачи
+        print(3)
+        task_id = str(len(status) + 1) 
+        print(4)
         filepath = os.path.join(app.config["UPLOAD_FOLDER"], f"{task_id}.jpg")
+        print(5)
         file.save(filepath)
-
-        # Инициализируем задачу распознавания
+        print(6)
         status[task_id] = {"completed": False}
+        print(7)
         threading.Thread(target=predict_image, args=(filepath, task_id)).start()
 
         return jsonify({"task_id": task_id})
@@ -58,6 +84,7 @@ def index():
 def get_status(task_id):
     if task_id not in status:
         return jsonify({"error": "Task not found"}), 404
+    print(status[task_id])
     return jsonify(status[task_id])
 
 if __name__ == "__main__":
